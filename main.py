@@ -1,8 +1,4 @@
-import time
-import json
-
 import disnake
-from collections import defaultdict
 from disnake.ext import commands
 from disnake import TextInputStyle
 import os
@@ -20,9 +16,8 @@ async def on_ready():
 
 senders = {}
 
-class MyModal(disnake.ui.Modal):
+class VerifyModal(disnake.ui.Modal):
     def __init__(self, captchacode: str):
-        # The details of the modal, and its components
         components = [
             disnake.ui.TextInput(
                 label="Капча",
@@ -68,12 +63,10 @@ async def verify(inter):
 @bot.listen("on_button_click")
 async def help_listener(inter: disnake.MessageInteraction):
     if inter.component.custom_id not in ["startcaptcha"]:
-        # We filter out any other button presses except
-        # the components we wish to process.
         return
 
     if inter.component.custom_id == "startcaptcha":
         senders[inter.user.id] = str(random.randint(1111, 9999))
-        await inter.response.send_modal(modal=MyModal(str(senders[inter.user.id])))
+        await inter.response.send_modal(modal=VerifyModal(str(senders[inter.user.id])))
 
 bot.run(os.getenv('TOKEN'))
