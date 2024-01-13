@@ -45,7 +45,6 @@ class MyModal(disnake.ui.Modal):
         super().__init__(title="Верификация", components=components)
 
     async def callback(self, inter: disnake.ModalInteraction):
-        await inter.message.delete()
         try:
             print(senders[inter.user.id])
             print(senders)
