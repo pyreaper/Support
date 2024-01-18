@@ -72,7 +72,7 @@ class VerifyModal(disnake.ui.Modal):
                 value = senders.pop(inter.user.id)
                 print(senders)
                 await inter.user.edit(nick=inter.text_values["mcname"])
-                await inter.response.send_message(content=inter.text_values["mcname"])
+                await inter.response.send_message(content="Верификация успешно пройдена. Удачного времяпрепровождения!", ephemeral=True)
             else:
                 value = senders.pop(inter.user.id)
                 await inter.response.send_message(content="Капча решена неверно! Попробуйте снова", ephemeral=True)
