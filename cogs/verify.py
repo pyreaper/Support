@@ -5,16 +5,16 @@ import disnake
 from disnake import TextInputStyle
 from disnake.ext import commands
 
-def add_to_json(key, value):
+def add_to_verify_json(key, value):
     with open("./data/verify.json", "r", encoding="utf-8") as f:
         c_data = json.load(f)
         c_data[key] = value
 
-    with open("./verify.json", "w", encoding="utf-8") as f:
+    with open("./data/verify.json", "w", encoding="utf-8") as f:
         json.dump(c_data, f)
 
 
-def get_value(key):
+def get_verify_value(key):
     with open("./data/verify.json", "r", encoding="utf-8") as f:
         c_data = json.load(f)
         return c_data[key]
@@ -24,9 +24,9 @@ senders = {}
 def updateVerifyEmbed():
     embed = disnake.Embed(
         title="Настройки верификации",
-        description=f"**Титул:** ``{get_value('title')}`` \n **Описание: \n** ```{get_value('description')}``` **Текст кнопки:** ``{get_value('buttontext')}`` \n **Количество символов в капче:** ``{get_value('numbersincaptcha')}`` \n **Роль участника:** <@&{str(get_value('role_id'))}> \n **Канал для отправки:** <#{str(get_value('channel_id'))}> \n **Картинка:** ``ниже в сообщении``"
+        description=f"**Титул:** ``{get_verify_value('title')}`` \n **Описание: \n** ```{get_verify_value('description')}``` **Текст кнопки:** ``{get_verify_value('buttontext')}`` \n **Количество символов в капче:** ``{get_verify_value('numbersincaptcha')}`` \n **Роль участника:** <@&{str(get_verify_value('role_id'))}> \n **Канал для отправки:** <#{str(get_verify_value('channel_id'))}> \n **Картинка:** ``ниже в сообщении``"
     )
-    embed.set_image(url=get_value("image"))
+    embed.set_image(url=get_verify_value("image"))
     return embed
 
 class VerifyModal(disnake.ui.Modal):
@@ -37,8 +37,8 @@ class VerifyModal(disnake.ui.Modal):
                 placeholder=captchacode,
                 custom_id="captcha",
                 style=TextInputStyle.short,
-                max_length=get_value("numbersincaptcha"),
-                min_length=get_value("numbersincaptcha"),
+                max_length=get_verify_value("numbersincaptcha"),
+                min_length=get_verify_value("numbersincaptcha"),
                 required=True,
             ),
             disnake.ui.TextInput(
@@ -57,7 +57,7 @@ class VerifyModal(disnake.ui.Modal):
         try:
             if inter.text_values["captcha"] == senders[inter.user.id]:
                 senders.pop(inter.user.id)
-                role = inter.guild.get_role(get_value("role_id"))
+                role = inter.guild.get_role(get_verify_value("role_id"))
                 await inter.user.edit(nick=inter.text_values["mcname"])
                 await inter.user.add_roles(role)
                 await inter.response.send_message(content="Капча решена верно. Удачной игры на нашем сервере.")
@@ -71,28 +71,28 @@ class VerifySettingsModal(disnake.ui.Modal):
         components = [
             disnake.ui.TextInput(
                 label="Титул",
-                value=get_value("title"),
+                value=get_verify_value("title"),
                 custom_id="title",
                 style=TextInputStyle.short,
                 required=False,
             ),
             disnake.ui.TextInput(
                 label="Описание",
-                value=get_value("description"),
+                value=get_verify_value("description"),
                 custom_id="description",
                 style=TextInputStyle.paragraph,
                 required=False,
             ),
             disnake.ui.TextInput(
                 label="Текст кнопки",
-                value=get_value("buttontext"),
+                value=get_verify_value("buttontext"),
                 custom_id="buttontext",
                 style=TextInputStyle.short,
                 required=False,
             ),
             disnake.ui.TextInput(
                 label="Количество символов в капче",
-                value=str(get_value("numbersincaptcha")),
+                value=str(get_verify_value("numbersincaptcha")),
                 custom_id="numbersincaptcha",
                 style=TextInputStyle.short,
                 required=False,
@@ -100,7 +100,7 @@ class VerifySettingsModal(disnake.ui.Modal):
             disnake.ui.TextInput(
                 label="Ссылка на картинку",
                 placeholder="...",
-                value=get_value("image"),
+                value=get_verify_value("image"),
                 custom_id="image",
                 style=TextInputStyle.short,
                 required=False,
@@ -112,20 +112,20 @@ class VerifySettingsModal(disnake.ui.Modal):
         for key, value in inter.text_values.items():
             if value != '':
                 if key == "numbersincaptcha":
-                    add_to_json(key, int(value))
+                    add_to_verify_json(key, int(value))
                 else:
-                    add_to_json(key, value)
+                    add_to_verify_json(key, value)
 
         await inter.message.edit(embeds=[updateVerifyEmbed()])
         await inter.response.send_message("Настройки были успешно изменены. Нажмите на кнопку для переотправки сообщения.")
 
 async def verify(inter):
     embed = disnake.Embed(
-        title=get_value("title"),
-        description=get_value("description")
+        title=get_verify_value("title"),
+        description=get_verify_value("description")
     )
-    embed.set_image(url=get_value("image"))
-    sended_msg = await inter.send(embeds=[embed], components=[disnake.ui.Button(label=get_value("buttontext"), style=disnake.ButtonStyle.gray, custom_id="startcaptcha")])
+    embed.set_image(url=get_verify_value("image"))
+    sended_msg = await inter.send(embeds=[embed], components=[disnake.ui.Button(label=get_verify_value("buttontext"), style=disnake.ButtonStyle.gray, custom_id="startcaptcha")])
     return sended_msg.id
 class Verify(commands.Cog):
     def __init__(self, bot):
@@ -143,36 +143,36 @@ class Verify(commands.Cog):
 
         if inter.component.custom_id == "startcaptcha":
             if inter.user.id not in senders: 
-                  senders[inter.user.id] = str(random.randint(int("1" * get_value("numbersincaptcha")), int("9" * get_value("numbersincaptcha"))))
+                  senders[inter.user.id] = str(random.randint(int("1" * get_verify_value("numbersincaptcha")), int("9" * get_verify_value("numbersincaptcha"))))
                   await inter.response.send_modal(modal=VerifyModal(str(senders[inter.user.id])))
         elif inter.component.custom_id == "changesettings":
             await inter.response.send_modal(modal=VerifySettingsModal())
         elif inter.component.custom_id == "sendmessage":
             try:
-                if get_value("verify_msg_id") != 0:
-                    channel = inter.guild.get_channel(get_value("channel_id"))
-                    msg = await channel.fetch_message(get_value("verify_msg_id"))
+                if get_verify_value("verify_msg_id") != 0:
+                    channel = inter.guild.get_channel(get_verify_value("channel_id"))
+                    msg = await channel.fetch_message(get_verify_value("verify_msg_id"))
                     await msg.delete()
-                    add_to_json("verify_msg_id", 0)
-                sendedmsgid = await verify(inter.guild.get_channel(get_value("channel_id")))
+                    add_to_verify_json("verify_msg_id", 0)
+                sendedmsgid = await verify(inter.guild.get_channel(get_verify_value("channel_id")))
                 await inter.response.send_message("Успешно", ephemeral=True)
-                add_to_json("verify_msg_id", sendedmsgid)
+                add_to_verify_json("verify_msg_id", sendedmsgid)
             except Exception as ex:
-                add_to_json("verify_msg_id", 0)
+                add_to_verify_json("verify_msg_id", 0)
                 await inter.response.send_message(f"Произошла ошибка (код: ``{ex}``). Айди сообщения было сброшено (удалите предыдущее если таковое имеется сами). Попробуйте снова. \nПри повторении ошибки обратитесь к `_thecoffee_`.", ephemeral=True)
         
         elif inter.component.custom_id == "deletemessage":
             try:
-                if get_value("verify_msg_id") != 0:
-                    channel = inter.guild.get_channel(get_value("channel_id"))
-                    msg = await channel.fetch_message(get_value("verify_msg_id"))
+                if get_verify_value("verify_msg_id") != 0:
+                    channel = inter.guild.get_channel(get_verify_value("channel_id"))
+                    msg = await channel.fetch_message(get_verify_value("verify_msg_id"))
                     await msg.delete()
-                    add_to_json("verify_msg_id", 0)
+                    add_to_verify_json("verify_msg_id", 0)
                     await inter.response.send_message("Успешно", ephemeral=True)
                 else:
                     await inter.response.send_message("Похоже, сообщение ещё не было отправлено. Отправьте его", ephemeral=True)
             except Exception as ex:
-                add_to_json("verify_msg_id", 0)
+                add_to_verify_json("verify_msg_id", 0)
                 await inter.response.send_message(f"Произошла ошибка (код: ``{ex}``). Айди сообщения было сброшено (удалите предыдущее если таковое имеется сами). Попробуйте снова. \nПри повторении ошибки обратитесь к `_thecoffee_`.", ephemeral=True)
 
     @commands.Cog.listener("on_dropdown")
@@ -182,22 +182,22 @@ class Verify(commands.Cog):
 
         if inter.component.custom_id == "settingsroleselect":
             selected_value = inter.values[0]
-            add_to_json("role_id", int(selected_value))
+            add_to_verify_json("role_id", int(selected_value))
             await inter.response.send_message("Роль была перевыбрана", ephemeral=True)
             await inter.message.edit(embeds=[updateVerifyEmbed()])
         elif inter.component.custom_id == "verifychannelselect":
             selected_value = inter.values[0]
             try:
-                if get_value("verify_msg_id") != 0:
-                    channel = inter.guild.get_channel(get_value("channel_id"))
-                    msg = await channel.fetch_message(get_value("verify_msg_id"))
+                if get_verify_value("verify_msg_id") != 0:
+                    channel = inter.guild.get_channel(get_verify_value("channel_id"))
+                    msg = await channel.fetch_message(get_verify_value("verify_msg_id"))
                     await msg.delete()
-                    add_to_json("verify_msg_id", 0)
-                add_to_json("channel_id", int(selected_value))
+                    add_to_verify_json("verify_msg_id", 0)
+                add_to_verify_json("channel_id", int(selected_value))
                 await inter.response.send_message("Канал был перевыбран", ephemeral=True)
                 await inter.message.edit(embeds=[updateVerifyEmbed()])
             except Exception as ex:
-                add_to_json("verify_msg_id", 0)
+                add_to_verify_json("verify_msg_id", 0)
                 await inter.response.send_message(f"Произошла ошибка (код: ``{ex}``). Айди сообщения было сброшено (удалите предыдущее если таковое имеется сами). Попробуйте снова. \nПри повторении ошибки обратитесь к `_thecoffee_`.", ephemeral=True)
             
             
