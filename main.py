@@ -5,6 +5,8 @@ import asyncio
 
 import disnake
 from disnake.ext import commands
+intents = disnake.Intents.default()
+intents.members = True
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -12,7 +14,7 @@ activity_list = [[disnake.ActivityType.watching, "👤 за пользовате
 
 token = os.getenv("TOKEN")
 
-bot = commands.InteractionBot()
+bot = commands.InteractionBot(intents=intents)
 
 async def presence_changer():
     while True:
@@ -28,17 +30,12 @@ async def presence_changer():
 async def on_ready():
     print(Fore.GREEN + f"[MAIN]: {bot.user} запущен.")
     print(Fore.WHITE + "--------------")
+    await bot.get_channel(1198211964476850267).connect()
     await presence_changer()
 
-try:
-    print("[MAIN]: Загрузка когов...")
-    bot.load_extension("cogs.verify")
-    print(Fore.GREEN + "[MAIN]: Коги успешно загружены")
-    print(Fore.WHITE + "--------------")
-except Exception as ex:
-    print(Fore.RED + "[MAIN]: Произошла ошибка при загрузке когов.")
-    print(ex)
-    print(Fore.WHITE + "--------------")
-    exit()
+for filename in os.listdir("./cogs"):
+    if filename.endswith(".py"):
+        bot.load_extension(f"cogs.{filename[:-3]}")
+        print(f"[MAIN] cogs.{filename[:-3]} загружен")
 
 bot.run(os.getenv('TOKEN'))

@@ -6,18 +6,17 @@ from disnake import TextInputStyle
 from disnake.ext import commands
 
 def add_to_json(key, value):
-    with open("./data.json", "r", encoding="utf-8") as f:
+    with open("./data/verify.json", "r", encoding="utf-8") as f:
         c_data = json.load(f)
         c_data[key] = value
 
-    with open("./data.json", "w", encoding="utf-8") as f:
+    with open("./verify.json", "w", encoding="utf-8") as f:
         json.dump(c_data, f)
 
 
 def get_value(key):
-    with open("./data.json", "r", encoding="utf-8") as f:
+    with open("./data/verify.json", "r", encoding="utf-8") as f:
         c_data = json.load(f)
-        print(c_data[key])
         return c_data[key]
 
 senders = {}
@@ -56,12 +55,9 @@ class VerifyModal(disnake.ui.Modal):
 
     async def callback(self, inter: disnake.ModalInteraction):
         try:
-            print(senders[inter.user.id])
-            print(senders)
             if inter.text_values["captcha"] == senders[inter.user.id]:
                 senders.pop(inter.user.id)
                 role = inter.guild.get_role(get_value("role_id"))
-                print(senders)
                 await inter.user.edit(nick=inter.text_values["mcname"])
                 await inter.user.add_roles(role)
                 await inter.response.send_message(content="Капча решена верно. Удачной игры на нашем сервере.")
@@ -69,7 +65,6 @@ class VerifyModal(disnake.ui.Modal):
                 senders.pop(inter.user.id)
                 await inter.response.send_message(content="Капча решена неверно! Попробуйте снова", ephemeral=True)
         except Exception as ex:
-            print(ex)
             await inter.response.send_message(content=f"Произошла ошибка. Обратитесь к администратору, сообщив код ошибки: ``{str(ex)}``", ephemeral=True)
 class VerifySettingsModal(disnake.ui.Modal):
     def __init__(self):
@@ -114,7 +109,6 @@ class VerifySettingsModal(disnake.ui.Modal):
         super().__init__(title="Настройки", components=components)
 
     async def callback(self, inter: disnake.ModalInteraction):
-        print(inter.text_values.items())
         for key, value in inter.text_values.items():
             if value != '':
                 if key == "numbersincaptcha":
@@ -137,7 +131,7 @@ class Verify(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.slash_command(name="verifysettings", dm_permission=False)
+    @commands.slash_command(name="verifysettings", description="Настройки верификации", dm_permission=False)
     @commands.default_member_permissions(administrator=True)
     async def verifysettings(self, inter):
         await inter.response.send_message(embeds=[updateVerifyEmbed()], components=[disnake.ui.RoleSelect(custom_id="settingsroleselect", placeholder="Роль"), disnake.ui.ChannelSelect(custom_id="verifychannelselect", placeholder="Канал"), disnake.ui.Button(label="Изменить настройки", style=disnake.ButtonStyle.gray, custom_id="changesettings"), disnake.ui.Button(label="Отправить сообщение в канал", style=disnake.ButtonStyle.success, custom_id="sendmessage"), disnake.ui.Button(label="Удалить сообщение из канала", style=disnake.ButtonStyle.danger, custom_id="deletemessage")])
