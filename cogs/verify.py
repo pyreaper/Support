@@ -25,7 +25,7 @@ senders = {}
 def updateVerifyEmbed():
     embed = disnake.Embed(
         title="Настройки верификации",
-        description=f"**Титул:** ``{get_value('title')}`` \n **Описание: \n** ```{get_value('description')}``` **Текст кнопки:** ``{get_value('buttontext')}`` \n **Количество символов в капче:** ``{get_value('numbersincaptcha')}`` \n **Роль участника:** <@&{str(get_value('role_id'))}> \n **Картинка:** ``ниже в сообщении``"
+        description=f"**Титул:** ``{get_value('title')}`` \n **Описание: \n** ```{get_value('description')}``` **Текст кнопки:** ``{get_value('buttontext')}`` \n **Количество символов в капче:** ``{get_value('numbersincaptcha')}`` \n **Роль участника:** <@&{str(get_value('role_id'))}> \n **Канал для отправки:** <#{str(get_value('channel_id'))}> \n **Картинка:** ``ниже в сообщении``"
     )
     embed.set_image(url=get_value("image"))
     return embed
@@ -64,7 +64,7 @@ class VerifyModal(disnake.ui.Modal):
                 print(senders)
                 await inter.user.edit(nick=inter.text_values["mcname"])
                 await inter.user.add_roles(role)
-                await inter.response.send_message(content=inter.text_values["mcname"])
+                await inter.response.send_message(content="Капча решена верно. Удачной игры на нашем сервере.")
             else:
                 senders.pop(inter.user.id)
                 await inter.response.send_message(content="Капча решена неверно! Попробуйте снова", ephemeral=True)
@@ -123,7 +123,7 @@ class VerifySettingsModal(disnake.ui.Modal):
                     add_to_json(key, value)
 
         await inter.message.edit(embeds=[updateVerifyEmbed()])
-        await inter.response.send_message("Настройки были успешно изменены. Пропишите /verify в нужном вам канале для нового сообщения.")
+        await inter.response.send_message("Настройки были успешно изменены. Нажмите на кнопку для переотправки сообщения.")
 
 async def verify(inter):
     embed = disnake.Embed(
@@ -131,27 +131,20 @@ async def verify(inter):
         description=get_value("description")
     )
     embed.set_image(url=get_value("image"))
-    await inter.channel.send(embeds=[embed], components=[disnake.ui.Button(label=get_value("buttontext"), style=disnake.ButtonStyle.gray, custom_id="startcaptcha")])
+    sended_msg = await inter.send(embeds=[embed], components=[disnake.ui.Button(label=get_value("buttontext"), style=disnake.ButtonStyle.gray, custom_id="startcaptcha")])
+    return sended_msg.id
 class Verify(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-  
-    @commands.slash_command(name="verify", dm_permission=False)
-    @commands.default_member_permissions(administrator=True)
-    async def verify_slash(self, inter):
-        await verify(inter)
-        await inter.response.send_message("Успешно", ephemeral=True)
-
-
 
     @commands.slash_command(name="verifysettings", dm_permission=False)
     @commands.default_member_permissions(administrator=True)
     async def verifysettings(self, inter):
-        await inter.response.send_message(embeds=[updateVerifyEmbed()], components=[disnake.ui.Button(label="Изменить настройки", style=disnake.ButtonStyle.gray, custom_id="changesettings"), disnake.ui.RoleSelect(custom_id="settingsroleselect", placeholder="Роль")])
+        await inter.response.send_message(embeds=[updateVerifyEmbed()], components=[disnake.ui.RoleSelect(custom_id="settingsroleselect", placeholder="Роль"), disnake.ui.ChannelSelect(custom_id="verifychannelselect", placeholder="Канал"), disnake.ui.Button(label="Изменить настройки", style=disnake.ButtonStyle.gray, custom_id="changesettings"), disnake.ui.Button(label="Отправить сообщение в канал", style=disnake.ButtonStyle.success, custom_id="sendmessage"), disnake.ui.Button(label="Удалить сообщение из канала", style=disnake.ButtonStyle.danger, custom_id="deletemessage")])
 
     @commands.Cog.listener("on_button_click")
-    async def help_listener(self, inter: disnake.MessageInteraction):
-        if inter.component.custom_id not in ["startcaptcha", "changesettings", "settingsroleselect"]:
+    async def button_listener(self, inter: disnake.MessageInteraction):
+        if inter.component.custom_id not in ["startcaptcha", "changesettings", "sendmessage", "deletemessage"]:
             return
 
         if inter.component.custom_id == "startcaptcha":
@@ -160,22 +153,59 @@ class Verify(commands.Cog):
                   await inter.response.send_modal(modal=VerifyModal(str(senders[inter.user.id])))
         elif inter.component.custom_id == "changesettings":
             await inter.response.send_modal(modal=VerifySettingsModal())
-        elif inter.component.custom_id == "settingsroleselect":
-            selected_value = inter.component.values[0]
-            add_to_json("role_id", int(selected_value.id))
-            await inter.response.send_message("Роль была перевыбрана", ephemeral=True)
-            await inter.message.edit(embeds=[updateVerifyEmbed()])
+        elif inter.component.custom_id == "sendmessage":
+            try:
+                if get_value("verify_msg_id") != 0:
+                    channel = inter.guild.get_channel(get_value("channel_id"))
+                    msg = await channel.fetch_message(get_value("verify_msg_id"))
+                    await msg.delete()
+                    add_to_json("verify_msg_id", 0)
+                sendedmsgid = await verify(inter.guild.get_channel(get_value("channel_id")))
+                await inter.response.send_message("Успешно", ephemeral=True)
+                add_to_json("verify_msg_id", sendedmsgid)
+            except Exception as ex:
+                add_to_json("verify_msg_id", 0)
+                await inter.response.send_message(f"Произошла ошибка (код: ``{ex}``). Айди сообщения было сброшено (удалите предыдущее если таковое имеется сами). Попробуйте снова. \nПри повторении ошибки обратитесь к `_thecoffee_`.", ephemeral=True)
+        
+        elif inter.component.custom_id == "deletemessage":
+            try:
+                if get_value("verify_msg_id") != 0:
+                    channel = inter.guild.get_channel(get_value("channel_id"))
+                    msg = await channel.fetch_message(get_value("verify_msg_id"))
+                    await msg.delete()
+                    add_to_json("verify_msg_id", 0)
+                    await inter.response.send_message("Успешно", ephemeral=True)
+                else:
+                    await inter.response.send_message("Похоже, сообщение ещё не было отправлено. Отправьте его", ephemeral=True)
+            except Exception as ex:
+                add_to_json("verify_msg_id", 0)
+                await inter.response.send_message(f"Произошла ошибка (код: ``{ex}``). Айди сообщения было сброшено (удалите предыдущее если таковое имеется сами). Попробуйте снова. \nПри повторении ошибки обратитесь к `_thecoffee_`.", ephemeral=True)
 
     @commands.Cog.listener("on_dropdown")
-    async def help_listener(self, inter: disnake.MessageInteraction):
-        if inter.component.custom_id not in ["settingsroleselect"]:
+    async def dropdown_listener(self, inter: disnake.MessageInteraction):
+        if inter.component.custom_id not in ["settingsroleselect", "verifychannelselect"]:
             return
 
         if inter.component.custom_id == "settingsroleselect":
             selected_value = inter.values[0]
             add_to_json("role_id", int(selected_value))
-            await inter.response.send_message("Роль была перевыбрана")
+            await inter.response.send_message("Роль была перевыбрана", ephemeral=True)
             await inter.message.edit(embeds=[updateVerifyEmbed()])
+        elif inter.component.custom_id == "verifychannelselect":
+            selected_value = inter.values[0]
+            try:
+                if get_value("verify_msg_id") != 0:
+                    channel = inter.guild.get_channel(get_value("channel_id"))
+                    msg = await channel.fetch_message(get_value("verify_msg_id"))
+                    await msg.delete()
+                    add_to_json("verify_msg_id", 0)
+                add_to_json("channel_id", int(selected_value))
+                await inter.response.send_message("Канал был перевыбран", ephemeral=True)
+                await inter.message.edit(embeds=[updateVerifyEmbed()])
+            except Exception as ex:
+                add_to_json("verify_msg_id", 0)
+                await inter.response.send_message(f"Произошла ошибка (код: ``{ex}``). Айди сообщения было сброшено (удалите предыдущее если таковое имеется сами). Попробуйте снова. \nПри повторении ошибки обратитесь к `_thecoffee_`.", ephemeral=True)
+            
             
 
 def setup(bot: commands.Bot):
