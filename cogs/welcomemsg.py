@@ -24,7 +24,7 @@ senders = {}
 def settingsWelcomeEmbed():
     embed = disnake.Embed(
         title="Настройки приветствия",
-        description=f"**Титул:** ``{get_welcome_value('title')}`` \n **Описание: \n** ```{get_welcome_value('description')}``` \n **Канал для отправки:** <#{str(get_welcome_value('channel_id'))}> \n **Картинка:** ``ниже в сообщении``"
+        description=f"**Титул:** ``{get_welcome_value('title')}`` \n **Описание: \n** {get_welcome_value('description')} \n **Канал для отправки:** <#{str(get_welcome_value('channel_id'))}> \n **Картинка:** ``ниже в сообщении`` \n **Текст кнопки:** ``{get_welcome_value('button')}`` \n **Ссылка в кнопке:** ``{get_welcome_value('button_link')}``"
     )
     embed.set_image(url=get_welcome_value("image"))
     return embed
@@ -65,6 +65,32 @@ class WelcomeSettingsModal(disnake.ui.Modal):
         await inter.message.edit(embeds=[settingsWelcomeEmbed()])
         await inter.response.send_message("Настройки были успешно изменены.", ephemeral=True)
 
+class WelcomeButtonSettingsModal(disnake.ui.Modal):
+    def __init__(self):
+        components = [
+            disnake.ui.TextInput(
+                label="Текст",
+                custom_id="button",
+                style=TextInputStyle.short,
+                required=False,
+            ),
+            disnake.ui.TextInput(
+                label="Ссылка",
+                custom_id="button_link",
+                style=TextInputStyle.short,
+                required=False,
+            ),
+        ]
+        super().__init__(title="Настройки", components=components)
+
+    async def callback(self, inter: disnake.ModalInteraction):
+        for key, value in inter.text_values.items():
+            if value != '':
+                add_to_welcome_json(key, value)
+
+        await inter.message.edit(embeds=[settingsWelcomeEmbed()])
+        await inter.response.send_message("Настройки были успешно изменены.", ephemeral=True)
+
 
 class Welcome(commands.Cog):
     def __init__(self, bot):
@@ -77,15 +103,36 @@ class Welcome(commands.Cog):
             offbtn = disnake.ui.Button(label="Включить оповещения", style=disnake.ButtonStyle.success, custom_id="offbtn")
         else:
             offbtn = disnake.ui.Button(label="Отключить оповещения", style=disnake.ButtonStyle.danger, custom_id="offbtn")
-        await inter.response.send_message(embeds=[settingsWelcomeEmbed()], components=[disnake.ui.ChannelSelect(custom_id="welcomechannelselect", placeholder="Канал"), disnake.ui.Button(label="Изменить настройки", style=disnake.ButtonStyle.gray, custom_id="changewelcomesettings"), offbtn])
+        await inter.response.send_message(embeds=[settingsWelcomeEmbed()], components=[disnake.ui.ChannelSelect(custom_id="welcomechannelselect", placeholder="Канал"), disnake.ui.Button(label="Изменить настройки", style=disnake.ButtonStyle.gray, custom_id="changewelcomesettings"), disnake.ui.Button(label="Изменить кнопку", style=disnake.ButtonStyle.gray, custom_id="changewelcomebutton"), disnake.ui.Button(label="Отправить тестовое сообщение", style=disnake.ButtonStyle.success, custom_id="sendtestwelcomemessage"), offbtn])
 
     @commands.Cog.listener("on_button_click")
     async def button_listener(self, inter: disnake.MessageInteraction):
-        if inter.component.custom_id not in ["changewelcomesettings", "offbtn"]:
+        if inter.component.custom_id not in ["changewelcomesettings", "changewelcomebutton", "offbtn", "sendtestwelcomemessage"]:
             return
         
         if inter.component.custom_id == "changewelcomesettings":
             await inter.response.send_modal(modal=WelcomeSettingsModal())
+        elif inter.component.custom_id == "changewelcomebutton":
+            await inter.response.send_modal(modal=WelcomeButtonSettingsModal())
+        elif inter.component.custom_id == "sendtestwelcomemessage":
+            footers = ["🔗 discord.gg/cmt-minecraft", "🎮 play.cmt-minecraft.ru"]
+            footer_rng = random.randint(0, len(footers) - 1)
+            footer = footers[footer_rng]
+            button = None
+            if get_welcome_value("button") != "0" and get_welcome_value("button_link") != "0":
+                button = disnake.ui.Button(label=get_welcome_value("button"), style=disnake.ButtonStyle.link, url=get_welcome_value("button_link"))
+            embed = disnake.Embed(
+                title=get_welcome_value("title"),
+                description=get_welcome_value("description"),
+            )
+            embed.set_footer(
+                text=footer,
+            )
+            embed.set_image(url=get_welcome_value("image"))
+            if button != None:
+                await inter.response.send_message(embeds=[embed], content=f"<@{inter.user.id}>", components=[button], ephemeral=True)
+            else:
+                await inter.response.send_message(embeds=[embed], content=f"<@{inter.user.id}>", ephemeral=True)
         elif inter.component.custom_id == "offbtn":
             add_to_welcome_json("off", not get_welcome_value("off"))
             await inter.response.send_message("Успешно", ephemeral=True)
@@ -93,7 +140,7 @@ class Welcome(commands.Cog):
                 offbtn = disnake.ui.Button(label="Включить оповещения", style=disnake.ButtonStyle.success, custom_id="offbtn")
             else:
                 offbtn = disnake.ui.Button(label="Отключить оповещения", style=disnake.ButtonStyle.danger, custom_id="offbtn")
-            await inter.message.edit(embeds=[settingsWelcomeEmbed()], components=[disnake.ui.ChannelSelect(custom_id="welcomechannelselect", placeholder="Канал"), disnake.ui.Button(label="Изменить настройки", style=disnake.ButtonStyle.gray, custom_id="changesettings"), offbtn])
+            await inter.message.edit(embeds=[settingsWelcomeEmbed()], components=[disnake.ui.ChannelSelect(custom_id="welcomechannelselect", placeholder="Канал"), disnake.ui.Button(label="Изменить настройки", style=disnake.ButtonStyle.gray, custom_id="changesettings"), disnake.ui.Button(label="Изменить настройки", style=disnake.ButtonStyle.gray, custom_id="changewelcomesettings"), disnake.ui.Button(label="Изменить кнопку", style=disnake.ButtonStyle.gray, custom_id="changewelcomebutton"), disnake.ui.Button(label="Отправить тестовое сообщение", style=disnake.ButtonStyle.success, custom_id="sendtestwelcomemessage"), offbtn])
     
     @commands.Cog.listener("on_dropdown")
     async def dropdown_listener(self, inter: disnake.MessageInteraction):
@@ -117,6 +164,9 @@ class Welcome(commands.Cog):
             footers = ["🔗 discord.gg/cmt-minecraft", "🎮 play.cmt-minecraft.ru"]
             footer_rng = random.randint(0, len(footers) - 1)
             footer = footers[footer_rng]
+            button = None
+            if get_welcome_value("button") != "0" and get_welcome_value("button_link") != "0":
+                button = disnake.ui.Button(label=get_welcome_value("button"), style=disnake.ButtonStyle.link, url=get_welcome_value("button_link"))
             embed = disnake.Embed(
                 title=get_welcome_value("title"),
                 description=get_welcome_value("description"),
@@ -125,7 +175,10 @@ class Welcome(commands.Cog):
                 text=footer,
             )
             embed.set_image(url=get_welcome_value("image"))
-            await channel.send(embeds=[embed], content=f"<@{member.id}>")
+            if button != None:
+                await channel.send(embeds=[embed], content=f"<@{member.id}>", components=[button], ephemeral=True)
+            else:
+                await channel.send(embeds=[embed], content=f"<@{member.id}>", ephemeral=True)
 
             
 

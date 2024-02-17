@@ -19,6 +19,17 @@ def get_verify_value(key):
         c_data = json.load(f)
         return c_data[key]
 
+def check_nickname(nickname):
+    for i in nickname:
+        if not i.isalnum():
+            if not i == "_":
+                return 0
+        else:
+            if any(letter in set("абвгдеёжзийклмнопрстуфхцчшщъыьэюя") for letter in i.lower()):
+                return 0
+    
+    return 1
+
 senders = {}
 
 def updateVerifyEmbed():
@@ -57,10 +68,20 @@ class VerifyModal(disnake.ui.Modal):
         try:
             if inter.text_values["captcha"] == senders[inter.user.id]:
                 senders.pop(inter.user.id)
-                role = inter.guild.get_role(get_verify_value("role_id"))
-                await inter.user.edit(nick=inter.text_values["mcname"])
-                await inter.user.add_roles(role)
-                await inter.response.send_message(content="Капча решена верно. Удачной игры на нашем сервере.")
+                if check_nickname(inter.text_values["mcname"]) == 1:
+                    role = inter.guild.get_role(get_verify_value("role_id"))
+                    members_with_role = role.members
+
+                    nicknames = [member.nick or member.name for member in members_with_role]
+                    print(nicknames)
+                    if inter.text_values["mcname"] in nicknames:
+                        await inter.response.send_message("Этот никнейм уже занят. Попробуйте другой", ephemeral=True)
+                    else:
+                        await inter.user.edit(nick=inter.text_values["mcname"])
+                        await inter.user.add_roles(role)
+                        await inter.response.send_message(content="Капча решена верно. Удачной игры на нашем сервере.", ephemeral=True)
+                else:
+                    await inter.response.send_message(content="Никнейм который вы ввели содержит запрещённые символы.", ephemeral=True)
             else:
                 senders.pop(inter.user.id)
                 await inter.response.send_message(content="Капча решена неверно! Попробуйте снова", ephemeral=True)
@@ -143,8 +164,10 @@ class Verify(commands.Cog):
 
         if inter.component.custom_id == "startcaptcha":
             if inter.user.id not in senders: 
-                  senders[inter.user.id] = str(random.randint(int("1" * get_verify_value("numbersincaptcha")), int("9" * get_verify_value("numbersincaptcha"))))
-                  await inter.response.send_modal(modal=VerifyModal(str(senders[inter.user.id])))
+                senders[inter.user.id] = str(random.randint(int("1" * get_verify_value("numbersincaptcha")), int("9" * get_verify_value("numbersincaptcha"))))
+                await inter.response.send_modal(modal=VerifyModal(str(senders[inter.user.id])))
+            else:
+                await inter.response.send_modal(modal=VerifyModal(str(senders[inter.user.id])))
         elif inter.component.custom_id == "changesettings":
             await inter.response.send_modal(modal=VerifySettingsModal())
         elif inter.component.custom_id == "sendmessage":
