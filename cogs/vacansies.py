@@ -68,7 +68,7 @@ class VacansiesSettingsModal(disnake.ui.Modal):
             ),
             disnake.ui.TextInput(
                 label="Вопрос 3",
-                value=get_vacansies_value(findex)[0],
+                value=get_vacansies_value(findex)[3],
                 custom_id="question3",
                 style=TextInputStyle.short,
                 required=False,
@@ -76,7 +76,7 @@ class VacansiesSettingsModal(disnake.ui.Modal):
             disnake.ui.TextInput(
                 label="Вопрос 4",
                 placeholder="...",
-                value=get_vacansies_value(findex)[0],
+                value=get_vacansies_value(findex)[4],
                 custom_id="question4",
                 style=TextInputStyle.short,
                 required=False,
@@ -92,10 +92,13 @@ class VacansiesSettingsModal(disnake.ui.Modal):
             print(key, value)
             print(keycounter)
             if value != '':
+                print("ALTT22AL")
                 builder.append(value)
             else:
+                print("ALTTAL")
                 builder.append(get_vacansies_value(self.findex)[keycounter])
             keycounter += 1
+            print(builder)
 
         add_to_vacansies_json(self.findex, builder)
 
@@ -156,7 +159,7 @@ async def vac_builder(name: str, questions: dict, user: disnake.Member, findex: 
         print(questions)
         for key, value in questions.items():
             question = get_vacansies_value(findex)[int(key)]
-            embed.add_field(name=question, value=value, inline=False)
+            embed.add_field(name=f'#**{question}**', value=value, inline=False)
 
         await channel.send(embeds=[embed])
 
