@@ -1,4 +1,4 @@
-import json
+import json_storer
 import random
 
 import disnake
@@ -6,18 +6,11 @@ from disnake import TextInputStyle
 from disnake.ext import commands
 
 def add_to_verify_json(key, value):
-    with open("./data/verify.json", "r", encoding="utf-8") as f:
-        c_data = json.load(f)
-        c_data[key] = value
-
-    with open("./data/verify.json", "w", encoding="utf-8") as f:
-        json.dump(c_data, f)
+    json_storer.add_to_json(key, value, "verify")
 
 
 def get_verify_value(key):
-    with open("./data/verify.json", "r", encoding="utf-8") as f:
-        c_data = json.load(f)
-        return c_data[key]
+    return json_storer.get_value(key, "verify")
 
 def check_nickname(nickname):
     for i in nickname:
@@ -158,7 +151,7 @@ class Verify(commands.Cog):
     async def verifysettings(self, inter: disnake.ApplicationCommandInteraction):
         print(interaction_storage)
         await inter.response.send_message("Эмбед с настройками успешно отправлен", ephemeral=True)
-        msg = await inter.channel.send(embeds=[updateVerifyEmbed()], components=[disnake.ui.RoleSelect(custom_id="settingsroleselect", placeholder="Роль"), disnake.ui.ChannelSelect(custom_id="verifychannelselect", placeholder="Канал"), disnake.ui.Button(label="Изменить настройки", style=disnake.ButtonStyle.gray, custom_id="changesettings"), disnake.ui.Button(label="Отправить сообщение в канал", style=disnake.ButtonStyle.success, custom_id="sendmessage"), disnake.ui.Button(label="Удалить сообщение из канала", style=disnake.ButtonStyle.danger, custom_id="deletemessage")])
+        msg = await inter.channel.send(embeds=[updateVerifyEmbed()], components=[disnake.ui.RoleSelect(custom_id="settingsroleselect", placeholder="Роль"), disnake.ui.ChannelSelect(custom_id="verifychannelselect", placeholder="Канал", channel_types=[disnake.ChannelType.text]), disnake.ui.Button(label="Изменить настройки", style=disnake.ButtonStyle.gray, custom_id="changesettings"), disnake.ui.Button(label="Отправить сообщение в канал", style=disnake.ButtonStyle.success, custom_id="sendmessage"), disnake.ui.Button(label="Удалить сообщение из канала", style=disnake.ButtonStyle.danger, custom_id="deletemessage")])
         if inter.user.id not in interaction_storage:
             interaction_storage[inter.author.id] = [msg.id]
         else:

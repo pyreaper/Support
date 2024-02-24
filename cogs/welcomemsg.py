@@ -1,4 +1,4 @@
-import json
+import json_storer
 import random
 
 import disnake
@@ -6,18 +6,11 @@ from disnake import TextInputStyle
 from disnake.ext import commands
 
 def add_to_welcome_json(key, value):
-    with open("./data/welcome.json", "r", encoding="utf-8") as f:
-        c_data = json.load(f)
-        c_data[key] = value
-
-    with open("./data/welcome.json", "w", encoding="utf-8") as f:
-        json.dump(c_data, f)
+    json_storer.add_to_json(key, value, "welcome")
 
 
 def get_welcome_value(key):
-    with open("./data/welcome.json", "r", encoding="utf-8") as f:
-        c_data = json.load(f)
-        return c_data[key]
+    return json_storer.get_value(key, "welcome")
 
 interaction_storage = {}
 
