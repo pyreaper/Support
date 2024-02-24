@@ -31,6 +31,7 @@ def check_nickname(nickname):
     return 1
 
 senders = {}
+interaction_storage = {}
 
 def updateEmbed():
     embed = disnake.Embed(
@@ -256,95 +257,107 @@ class Vacansies(commands.Cog):
 
     @commands.slash_command(name="vacansies_settings", description="Настройки вакансий", dm_permission=False)
     @commands.default_member_permissions(administrator=True)
-    async def verifysettings(self, inter: disnake.ApplicationCommandInteraction):
-        await inter.response.send_message(embeds=[updateEmbed()], components=[disnake.ui.ChannelSelect(custom_id="vacansieschannelselect", placeholder="Канал"), disnake.ui.ChannelSelect(custom_id="vacsenderchannelselect", placeholder="Канал (туда пойдут заявки)"), disnake.ui.Button(label="Изменить настройки эмбеда", style=disnake.ButtonStyle.gray, custom_id="changevacansiessettings"), disnake.ui.Button(label="Отправить сообщение в канал", style=disnake.ButtonStyle.success, custom_id="sendvacansiesmessage"), disnake.ui.Button(label="Удалить сообщение из канала", style=disnake.ButtonStyle.danger, custom_id="deletevacansiesmessage"), disnake.ui.Button(label="Изменить настройки первой вакансии", style=disnake.ButtonStyle.primary, custom_id="changevacansiesfirst"), disnake.ui.Button(label="Изменить настройки второй вакансии", style=disnake.ButtonStyle.primary, custom_id="changevacansiessecond"), disnake.ui.Button(label="Изменить настройки третьей вакансии", style=disnake.ButtonStyle.primary, custom_id="changevacansiesthrid")])
+    async def vacsettings(self, inter: disnake.ApplicationCommandInteraction):
+        print(interaction_storage)
+        await inter.response.send_message("Эмбед с настройками успешно отправлен", ephemeral=True)
+        msg = await inter.channel.send(embeds=[updateEmbed()], components=[disnake.ui.ChannelSelect(custom_id="vacansieschannelselect", placeholder="Канал"), disnake.ui.ChannelSelect(custom_id="vacsenderchannelselect", placeholder="Канал (туда пойдут заявки)"), disnake.ui.Button(label="Изменить настройки эмбеда", style=disnake.ButtonStyle.gray, custom_id="changevacansiessettings"), disnake.ui.Button(label="Отправить сообщение в канал", style=disnake.ButtonStyle.success, custom_id="sendvacansiesmessage"), disnake.ui.Button(label="Удалить сообщение из канала", style=disnake.ButtonStyle.danger, custom_id="deletevacansiesmessage"), disnake.ui.Button(label="Изменить настройки первой вакансии", style=disnake.ButtonStyle.primary, custom_id="changevacansiesfirst"), disnake.ui.Button(label="Изменить настройки второй вакансии", style=disnake.ButtonStyle.primary, custom_id="changevacansiessecond"), disnake.ui.Button(label="Изменить настройки третьей вакансии", style=disnake.ButtonStyle.primary, custom_id="changevacansiesthrid")])
+        print(msg)
+        if inter.user.id not in interaction_storage:
+            interaction_storage[inter.author.id] = [msg.id]
+        else:
+            interaction_storage[inter.author.id].append(msg.id)
 
     @commands.Cog.listener("on_button_click")
     async def button_listener(self, inter: disnake.MessageInteraction):
         if inter.component.custom_id not in ["changevacansiessettings", "sendvacansiesmessage", "deletevacansiesmessage", "changevacansiesfirst", "changevacansiessecond", "changevacansiesthrid", "vacansies_first", "vacansies_second", "vacansies_thrid"]:
             return
-
-        if inter.component.custom_id == "changevacansiessettings":
-            await inter.response.send_modal(modal=VEmbedSettingsModal())
-        elif inter.component.custom_id == "sendvacansiesmessage":
-            try:
-                print("DJDDJDJ")
-                if get_vacansies_value("vacansies_msg_id") != 0:
+        if inter.user.id in interaction_storage and inter.message.id in interaction_storage[inter.user.id]:
+            if inter.component.custom_id == "changevacansiessettings":
+                await inter.response.send_modal(modal=VEmbedSettingsModal())
+            elif inter.component.custom_id == "sendvacansiesmessage":
+                try:
                     print("DJDDJDJ")
-                    channel = inter.guild.get_channel(get_vacansies_value("channel_id"))
-                    print("DJDDJDJ")
-                    msg = await channel.fetch_message(get_vacansies_value("vacansies_msg_id"))
-                    await msg.delete()
-                    print("DJDDJDJ")
-                    add_to_vacansies_json("vacansies_msg_id", 0)
-                sendedmsgid = await build_vacansies_embed(inter.guild.get_channel(get_vacansies_value("channel_id")))
-                await inter.response.send_message("Успешно", ephemeral=True)
-                add_to_vacansies_json("vacansies_msg_id", sendedmsgid)
-            except Exception as ex:
-                add_to_vacansies_json("vacansies_msg_id", 0)
-                await inter.response.send_message(f"Произошла ошибка (код: ``{ex}``). Айди сообщения было сброшено (удалите предыдущее если таковое имеется сами). Попробуйте снова. \nПри повторении ошибки обратитесь к `_thecoffee_`.", ephemeral=True)
-        
-        elif inter.component.custom_id == "deletevacansiesmessage":
-            try:
-                if get_vacansies_value("vacansies_msg_id") != 0:
-                    channel = inter.guild.get_channel(get_vacansies_value("channel_id"))
-                    msg = await channel.fetch_message(get_vacansies_value("vacansies_msg_id"))
-                    await msg.delete()
-                    add_to_vacansies_json("vacansies_msg_id", 0)
+                    if get_vacansies_value("vacansies_msg_id") != 0:
+                        print("DJDDJDJ")
+                        channel = inter.guild.get_channel(get_vacansies_value("channel_id"))
+                        print("DJDDJDJ")
+                        msg = await channel.fetch_message(get_vacansies_value("vacansies_msg_id"))
+                        await msg.delete()
+                        print("DJDDJDJ")
+                        add_to_vacansies_json("vacansies_msg_id", 0)
+                    sendedmsgid = await build_vacansies_embed(inter.guild.get_channel(get_vacansies_value("channel_id")))
                     await inter.response.send_message("Успешно", ephemeral=True)
-                else:
-                    await inter.response.send_message("Похоже, сообщение ещё не было отправлено. Отправьте его", ephemeral=True)
-            except Exception as ex:
-                add_to_vacansies_json("vacansies_msg_id", 0)
-                await inter.response.send_message(f"Произошла ошибка (код: ``{ex}``). Айди сообщения было сброшено (удалите предыдущее если таковое имеется сами). Попробуйте снова. \nПри повторении ошибки обратитесь к `_thecoffee_`.", ephemeral=True)
-        elif inter.component.custom_id == "changevacansiesfirst":
-            await inter.response.send_modal(modal=VacansiesSettingsModal("first"))
-        elif inter.component.custom_id == "changevacansiessecond":
-            await inter.response.send_modal(modal=VacansiesSettingsModal("second"))
-        elif inter.component.custom_id == "changevacansiesthrid":
-            await inter.response.send_modal(modal=VacansiesSettingsModal("thrid"))
-        elif inter.component.custom_id == "vacansies_first":
-            await inter.response.send_modal(modal=VacansiesModal("first", inter.user.id))
-        elif inter.component.custom_id == "vacansies_second":
-            await inter.response.send_modal(modal=VacansiesModal("second", inter.user.id))
-        elif inter.component.custom_id == "vacansies_thrid":
-            await inter.response.send_modal(modal=VacansiesModal("thrid", inter.user.id))
+                    add_to_vacansies_json("vacansies_msg_id", sendedmsgid)
+                except Exception as ex:
+                    #add_to_vacansies_json("vacansies_msg_id", 0)
+                    await inter.response.send_message(f"Произошла ошибка (код: ``{ex}``). Айди сообщения было сброшено (удалите предыдущее если таковое имеется сами). Попробуйте снова. \nПри повторении ошибки обратитесь к `_thecoffee_`.", ephemeral=True)
+            
+            elif inter.component.custom_id == "deletevacansiesmessage":
+                try:
+                    if get_vacansies_value("vacansies_msg_id") != 0:
+                        channel = inter.guild.get_channel(get_vacansies_value("channel_id"))
+                        msg = await channel.fetch_message(get_vacansies_value("vacansies_msg_id"))
+                        await msg.delete()
+                        add_to_vacansies_json("vacansies_msg_id", 0)
+                        await inter.response.send_message("Успешно", ephemeral=True)
+                    else:
+                        await inter.response.send_message("Похоже, сообщение ещё не было отправлено. Отправьте его", ephemeral=True)
+                except Exception as ex:
+                    #add_to_vacansies_json("vacansies_msg_id", 0)
+                    await inter.response.send_message(f"Произошла ошибка (код: ``{ex}``). Айди сообщения было сброшено (удалите предыдущее если таковое имеется сами). Попробуйте снова. \nПри повторении ошибки обратитесь к `_thecoffee_`.", ephemeral=True)
+            elif inter.component.custom_id == "changevacansiesfirst":
+                await inter.response.send_modal(modal=VacansiesSettingsModal("first"))
+            elif inter.component.custom_id == "changevacansiessecond":
+                await inter.response.send_modal(modal=VacansiesSettingsModal("second"))
+            elif inter.component.custom_id == "changevacansiesthrid":
+                await inter.response.send_modal(modal=VacansiesSettingsModal("thrid"))
+            elif inter.component.custom_id == "vacansies_first":
+                await inter.response.send_modal(modal=VacansiesModal("first", inter.user.id))
+            elif inter.component.custom_id == "vacansies_second":
+                await inter.response.send_modal(modal=VacansiesModal("second", inter.user.id))
+            elif inter.component.custom_id == "vacansies_thrid":
+                await inter.response.send_modal(modal=VacansiesModal("thrid", inter.user.id))
+        else:
+            print(inter.id in interaction_storage, inter.message.id, inter.user.id, interaction_storage)
+            await inter.response.send_message("Эта кнопка не предназначена для вас. (Если вы администратор, перезапустите команду)", ephemeral=True)
 
 
     @commands.Cog.listener("on_dropdown")
     async def dropdown_listener(self, inter: disnake.MessageInteraction):
         if inter.component.custom_id not in ["vacansieschannelselect", "vacsenderchannelselect"]:
             return
-
-        if inter.component.custom_id == "vacansieschannelselect":
-            selected_value = inter.values[0]
-            try:
-                if get_vacansies_value("vacansies_msg_id") != 0:
-                    channel = inter.guild.get_channel(get_vacansies_value("channel_id"))
-                    msg = await channel.fetch_message(get_vacansies_value("vacansies_msg_id"))
-                    await msg.delete()
-                    add_to_vacansies_json("vacansies_msg_id", 0)
-                add_to_vacansies_json("channel_id", int(selected_value))
-                await inter.response.send_message("Канал был перевыбран", ephemeral=True)
-                await inter.message.edit(embeds=[updateEmbed()])
-            except Exception as ex:
-                add_to_vacansies_json("vacansies_msg_id", 0)
-                await inter.response.send_message(f"Произошла ошибка (код: ``{ex}``). Айди сообщения было сброшено (удалите предыдущее если таковое имеется сами). Попробуйте снова. \nПри повторении ошибки обратитесь к `_thecoffee_`.", ephemeral=True)
-        elif inter.component.custom_id == "vacsenderchannelselect":
-            selected_value = inter.values[0]
-            try:
-                if get_vacansies_value("vacansies_msg_id") != 0:
-                    channel = inter.guild.get_channel(get_vacansies_value("sender_channel_id"))
-                    msg = await channel.fetch_message(get_vacansies_value("vacansies_msg_id"))
-                    await msg.delete()
-                    add_to_vacansies_json("vacansies_msg_id", 0)
-                add_to_vacansies_json("sender_channel_id", int(selected_value))
-                await inter.response.send_message("Канал был перевыбран", ephemeral=True)
-                await inter.message.edit(embeds=[updateEmbed()])
-            except Exception as ex:
-                add_to_vacansies_json("vacansies_msg_id", 0)
-                await inter.response.send_message(f"Произошла ошибка (код: ``{ex}``). Айди сообщения было сброшено (удалите предыдущее если таковое имеется сами). Попробуйте снова. \nПри повторении ошибки обратитесь к `_thecoffee_`.", ephemeral=True)
-            
+        if inter.user.id in interaction_storage and inter.message.id in interaction_storage[inter.user.id]:
+            if inter.component.custom_id == "vacansieschannelselect":
+                selected_value = inter.values[0]
+                try:
+                    if get_vacansies_value("vacansies_msg_id") != 0:
+                        channel = inter.guild.get_channel(get_vacansies_value("channel_id"))
+                        msg = await channel.fetch_message(get_vacansies_value("vacansies_msg_id"))
+                        await msg.delete()
+                        add_to_vacansies_json("vacansies_msg_id", 0)
+                    add_to_vacansies_json("channel_id", int(selected_value))
+                    await inter.response.send_message("Канал был перевыбран", ephemeral=True)
+                    await inter.message.edit(embeds=[updateEmbed()])
+                except Exception as ex:
+                    #add_to_vacansies_json("vacansies_msg_id", 0)
+                    await inter.response.send_message(f"Произошла ошибка (код: ``{ex}``). Айди сообщения было сброшено (удалите предыдущее если таковое имеется сами). Попробуйте снова. \nПри повторении ошибки обратитесь к `_thecoffee_`.", ephemeral=True)
+            elif inter.component.custom_id == "vacsenderchannelselect":
+                selected_value = inter.values[0]
+                try:
+                    if get_vacansies_value("vacansies_msg_id") != 0:
+                        channel = inter.guild.get_channel(get_vacansies_value("sender_channel_id"))
+                        msg = await channel.fetch_message(get_vacansies_value("vacansies_msg_id"))
+                        await msg.delete()
+                        add_to_vacansies_json("vacansies_msg_id", 0)
+                    add_to_vacansies_json("sender_channel_id", int(selected_value))
+                    await inter.response.send_message("Канал был перевыбран", ephemeral=True)
+                    await inter.message.edit(embeds=[updateEmbed()])
+                except Exception as ex:
+                    #add_to_vacansies_json("vacansies_msg_id", 0)
+                    await inter.response.send_message(f"Произошла ошибка (код: ``{ex}``). Айди сообщения было сброшено (удалите предыдущее если таковое имеется сами). Попробуйте снова. \nПри повторении ошибки обратитесь к `_thecoffee_`.", ephemeral=True)
+        else:
+            print(inter.id in interaction_storage, inter.user.id, interaction_storage)
+            await inter.response.send_message("Эта кнопка не предназначена для вас. (Если вы администратор, перезапустите команду)", ephemeral=True)
             
 
 def setup(bot: commands.Bot):
