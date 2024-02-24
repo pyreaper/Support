@@ -98,7 +98,7 @@ class Welcome(commands.Cog):
             offbtn = disnake.ui.Button(label="Отключить оповещения", style=disnake.ButtonStyle.danger, custom_id="offbtn")
         print(interaction_storage)
         await inter.response.send_message("Эмбед с настройками успешно отправлен", ephemeral=True)
-        msg = await inter.channel.send(embeds=[settingsWelcomeEmbed()], components=[disnake.ui.ChannelSelect(custom_id="welcomechannelselect", placeholder="Канал"), disnake.ui.Button(label="Изменить настройки", style=disnake.ButtonStyle.gray, custom_id="changewelcomesettings"), disnake.ui.Button(label="Изменить кнопку", style=disnake.ButtonStyle.gray, custom_id="changewelcomebutton"), disnake.ui.Button(label="Отправить тестовое сообщение", style=disnake.ButtonStyle.success, custom_id="sendtestwelcomemessage"), offbtn])
+        msg = await inter.channel.send(embeds=[settingsWelcomeEmbed()], components=[disnake.ui.ChannelSelect(custom_id="welcomechannelselect", placeholder="Канал", channel_types=[disnake.ChannelType.text]), disnake.ui.Button(label="Изменить настройки", style=disnake.ButtonStyle.gray, custom_id="changewelcomesettings"), disnake.ui.Button(label="Изменить кнопку", style=disnake.ButtonStyle.gray, custom_id="changewelcomebutton"), disnake.ui.Button(label="Отправить тестовое сообщение", style=disnake.ButtonStyle.success, custom_id="sendtestwelcomemessage"), offbtn])
         print(msg)
         if inter.user.id not in interaction_storage:
             interaction_storage[inter.author.id] = [msg.id]
