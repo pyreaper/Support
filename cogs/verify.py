@@ -1,9 +1,12 @@
+import datetime
 import json_storer
 import random
 
 import disnake
 from disnake import TextInputStyle
 from disnake.ext import commands
+
+from captcha.image import ImageCaptcha
 
 def add_to_verify_json(key, value):
     json_storer.add_to_json(key, value, "verify")
@@ -35,11 +38,11 @@ def updateVerifyEmbed():
     return embed
 
 class VerifyModal(disnake.ui.Modal):
-    def __init__(self, captchacode: str):
+    def __init__(self):
         components = [
             disnake.ui.TextInput(
                 label="Капча",
-                placeholder=captchacode,
+                placeholder="0000",
                 custom_id="captcha",
                 style=TextInputStyle.short,
                 max_length=get_verify_value("numbersincaptcha"),
@@ -140,7 +143,7 @@ async def verify(inter):
         description=get_verify_value("description")
     )
     embed.set_image(url=get_verify_value("image"))
-    sended_msg = await inter.send(embeds=[embed], components=[disnake.ui.Button(label=get_verify_value("buttontext"), style=disnake.ButtonStyle.gray, custom_id="startcaptcha")])
+    sended_msg = await inter.send(embeds=[embed], components=[disnake.ui.Button(label=get_verify_value("buttontext"), style=disnake.ButtonStyle.gray, custom_id="sendcaptcha")])
     return sended_msg.id
 class Verify(commands.Cog):
     def __init__(self, bot):
@@ -159,16 +162,45 @@ class Verify(commands.Cog):
 
     @commands.Cog.listener("on_button_click")
     async def button_listener(self, inter: disnake.MessageInteraction):
-        if inter.component.custom_id not in ["startcaptcha", "changesettings", "sendmessage", "deletemessage"]:
+        if inter.component.custom_id not in ["startcaptcha", "sendcaptcha", "changesettings", "sendmessage", "deletemessage"]:
             return
         
-        if inter.user.id in interaction_storage and inter.message.id in interaction_storage[inter.user.id]:
+        if (inter.user.id in interaction_storage and inter.message.id in interaction_storage[inter.user.id]) or inter.component.custom_id == "startcaptcha" or inter.component.custom_id == "sendcaptcha":
             if inter.component.custom_id == "startcaptcha":
+                for role in inter.user.roles:
+                    n_role = inter.guild.get_role(get_verify_value("role_id"))
+                    if role == n_role:
+                        await inter.response.send_message("Вы уже прошли верификацию!", ephemeral=True)
+                        return 
+                    
+                await inter.response.send_modal(modal=VerifyModal())
+            elif inter.component.custom_id == "sendcaptcha":
+                for role in inter.user.roles:
+                    n_role = inter.guild.get_role(get_verify_value("role_id"))
+                    if role == n_role:
+                        await inter.response.send_message("Вы уже прошли верификацию!", ephemeral=True)
+                        return 0
+                
                 if inter.user.id not in senders: 
                     senders[inter.user.id] = str(random.randint(int("1" * get_verify_value("numbersincaptcha")), int("9" * get_verify_value("numbersincaptcha"))))
-                    await inter.response.send_modal(modal=VerifyModal(str(senders[inter.user.id])))
-                else:
-                    await inter.response.send_modal(modal=VerifyModal(str(senders[inter.user.id])))
+                image = ImageCaptcha(width=280, height=90)
+
+                data = image.generate(senders[inter.user.id])
+
+                whofile = open(f"{inter.user.id}.png", "a")
+                whofile.close()
+                image.write(senders[inter.user.id], f"{inter.user.id}.png")
+
+                sender_embed = disnake.Embed(
+                    title="Капча!",
+                    description="**Если капча нерешабельна, просто напишите неверный "
+                                "вариант.**",
+                    color=disnake.Colour.from_rgb(223, 82, 82)
+                )
+                sender_embed.timestamp = datetime.datetime.now()
+                sender_embed.set_footer(text='Mithic Vanilla')
+                sender_embed.set_image(url=f"attachment://{inter.user.id}.png")
+                await inter.response.send_message(embed=sender_embed, file=disnake.File(f"{inter.user.id}.png"), components=[disnake.ui.Button(label="Ввести капчу", style=disnake.ButtonStyle.green, custom_id="startcaptcha")], ephemeral=True)
             elif inter.component.custom_id == "changesettings":
                 await inter.response.send_modal(modal=VerifySettingsModal())
             elif inter.component.custom_id == "sendmessage":
