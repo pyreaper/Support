@@ -1,5 +1,5 @@
 import datetime
-import json_storer
+import json_storer as jsonclass
 import random
 
 import disnake
@@ -8,12 +8,16 @@ from disnake.ext import commands
 
 from captcha.image import ImageCaptcha
 
+json_storer = jsonclass.JsonStorer("verify")
+
+
 def add_to_verify_json(key, value):
-    json_storer.add_to_json(key, value, "verify")
+    json_storer.add_to_json(key, value)
 
 
 def get_verify_value(key):
-    return json_storer.get_value(key, "verify")
+    return json_storer.get_value(key)
+
 
 def check_nickname(nickname):
     for i in nickname:
@@ -26,16 +30,19 @@ def check_nickname(nickname):
     
     return 1
 
+
 senders = {}
 interaction_storage = {}
 
-def updateVerifyEmbed():
+
+def update_verify_value():
     embed = disnake.Embed(
         title="Настройки верификации",
         description=f"**Титул:** ``{get_verify_value('title')}`` \n **Описание: \n** ```{get_verify_value('description')}``` **Текст кнопки:** ``{get_verify_value('buttontext')}`` \n **Количество символов в капче:** ``{get_verify_value('numbersincaptcha')}`` \n **Роль участника:** <@&{str(get_verify_value('role_id'))}> \n **Канал для отправки:** <#{str(get_verify_value('channel_id'))}> \n **Картинка:** ``ниже в сообщении``"
     )
     embed.set_image(url=get_verify_value("image"))
     return embed
+
 
 class VerifyModal(disnake.ui.Modal):
     def __init__(self):
@@ -134,7 +141,7 @@ class VerifySettingsModal(disnake.ui.Modal):
                 else:
                     add_to_verify_json(key, value)
 
-        await inter.message.edit(embeds=[updateVerifyEmbed()])
+        await inter.message.edit(embeds=[update_verify_value()])
         await inter.response.send_message("Настройки были успешно изменены. Нажмите на кнопку для переотправки сообщения.")
 
 async def verify(inter):
@@ -154,7 +161,7 @@ class Verify(commands.Cog):
     async def verifysettings(self, inter: disnake.ApplicationCommandInteraction):
         print(interaction_storage)
         await inter.response.send_message("Эмбед с настройками успешно отправлен", ephemeral=True)
-        msg = await inter.channel.send(embeds=[updateVerifyEmbed()], components=[disnake.ui.RoleSelect(custom_id="settingsroleselect", placeholder="Роль"), disnake.ui.ChannelSelect(custom_id="verifychannelselect", placeholder="Канал", channel_types=[disnake.ChannelType.text]), disnake.ui.Button(label="Изменить настройки", style=disnake.ButtonStyle.gray, custom_id="changesettings"), disnake.ui.Button(label="Отправить сообщение в канал", style=disnake.ButtonStyle.success, custom_id="sendmessage"), disnake.ui.Button(label="Удалить сообщение из канала", style=disnake.ButtonStyle.danger, custom_id="deletemessage")])
+        msg = await inter.channel.send(embeds=[update_verify_value()], components=[disnake.ui.RoleSelect(custom_id="settingsroleselect", placeholder="Роль"), disnake.ui.ChannelSelect(custom_id="verifychannelselect", placeholder="Канал", channel_types=[disnake.ChannelType.text]), disnake.ui.Button(label="Изменить настройки", style=disnake.ButtonStyle.gray, custom_id="changesettings"), disnake.ui.Button(label="Отправить сообщение в канал", style=disnake.ButtonStyle.success, custom_id="sendmessage"), disnake.ui.Button(label="Удалить сообщение из канала", style=disnake.ButtonStyle.danger, custom_id="deletemessage")])
         if inter.user.id not in interaction_storage:
             interaction_storage[inter.author.id] = [msg.id]
         else:
@@ -244,7 +251,7 @@ class Verify(commands.Cog):
                 selected_value = inter.values[0]
                 add_to_verify_json("role_id", int(selected_value))
                 await inter.response.send_message("Роль была перевыбрана", ephemeral=True)
-                await inter.message.edit(embeds=[updateVerifyEmbed()])
+                await inter.message.edit(embeds=[update_verify_value()])
             elif inter.component.custom_id == "verifychannelselect":
                 selected_value = inter.values[0]
                 try:
@@ -255,7 +262,7 @@ class Verify(commands.Cog):
                         add_to_verify_json("verify_msg_id", 0)
                     add_to_verify_json("channel_id", int(selected_value))
                     await inter.response.send_message("Канал был перевыбран", ephemeral=True)
-                    await inter.message.edit(embeds=[updateVerifyEmbed()])
+                    await inter.message.edit(embeds=[update_verify_value()])
                 except Exception as ex:
                     add_to_verify_json("verify_msg_id", 0)
                     await inter.response.send_message(f"Произошла ошибка (код: ``{ex}``). Айди сообщения было сброшено (удалите предыдущее если таковое имеется сами). Попробуйте снова. \nПри повторении ошибки обратитесь к `_thecoffee_`.", ephemeral=True)

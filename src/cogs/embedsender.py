@@ -2,6 +2,7 @@ import disnake
 from disnake import TextInputStyle
 from disnake.ext import commands
 
+
 class EmbedSettingsModal(disnake.ui.Modal):
     def __init__(self):
         components = [
@@ -61,18 +62,18 @@ class EmbedSettingsModal(disnake.ui.Modal):
             await inter.channel.send(embeds=[embed_to_send])
 
         await inter.response.send_message("Эмбед успешно отправлен.", ephemeral=True)
-        
 
 
 class EmbedSender(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.slash_command(name="send_embed", description="Отправить эмбед (в канал в котором используется комманда)", dm_permission=False, aliases=['embed', 'эмбед'])
+    @commands.slash_command(name="send_embed", description="Отправить эмбед (в канал в котором используется комманда)",
+                            dm_permission=False, aliases=['embed', 'эмбед'])
     @commands.default_member_permissions(administrator=True)
     async def suembed(self, inter):
         await inter.response.send_modal(modal=EmbedSettingsModal())
-            
+
 
 def setup(bot: commands.Bot):
     bot.add_cog(EmbedSender(bot))

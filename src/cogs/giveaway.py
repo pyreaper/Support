@@ -61,18 +61,18 @@ class GiveawayCreator:
 
         general_data["finished"] = False
 
-        with open(f"./data/giveaway.json", "r", encoding="utf-8") as f:
+        with open(f"./src/data/giveaway.json", "r", encoding="utf-8") as f:
             c_data = json.load(f)
             print(c_data)
             c_data[giveaway_name] = general_data
 
-        with open(f"./data/giveaway.json", "w", encoding="utf-8") as f:
+        with open(f"./src/data/giveaway.json", "w", encoding="utf-8") as f:
             json.dump(c_data, f)
 
         return "👍"
 
     def add_msg(self, user_id: int, giveaway_name: str) -> bool:
-        with open(f"./data/giveaway.json", "r", encoding="utf-8") as f:
+        with open(f"./src/data/giveaway.json", "r", encoding="utf-8") as f:
             c_data = json.load(f)
             try:
                 giveaway = c_data[giveaway_name]
@@ -143,7 +143,7 @@ class GiveawayCreator:
 
     def get_all_giveaways(self) -> dict:
         giveaway_list = {}
-        with open(f"./data/giveaway.json", "r", encoding="utf-8") as f:
+        with open(f"./src/data/giveaway.json", "r", encoding="utf-8") as f:
             c_data = json.load(f)
             try:
                 for key, value in c_data.items():
@@ -155,8 +155,8 @@ class GiveawayCreator:
             except Exception:
                 return {}
 
-    def get_giveaway_by_name(self, giveaway_name: str, check_finish: bool = True):
-        with open(f"./data/giveaway.json", "r", encoding="utf-8") as f:
+    def get_giveaway_by_name(self, giveaway_name: str, check_finish: bool = True) -> dict:
+        with open(f"./src/data/giveaway.json", "r", encoding="utf-8") as f:
             c_data = json.load(f)
             giveaway = "there is no giveaway like that"
             try:
@@ -177,7 +177,7 @@ class GiveawayCreator:
                 return "there is no giveaway like that"
 
     def get_giveaway_by_msg_id(self, message_id: int):
-        with open(f"./data/giveaway.json", "r", encoding="utf-8") as f:
+        with open(f"./src/data/giveaway.json", "r", encoding="utf-8") as f:
             c_data = json.load(f)
             giveaway = "there is no giveaway like that"
             try:
@@ -507,7 +507,7 @@ class Giveaways(commands.Cog):
                         reactions = giveaway_message.reactions
                         reacted_users = []
                         for reaction in reactions:
-                            for user in reaction.users():
+                            async for user in reaction.users():
                                 reacted_users.append(user.id)
                         if message.author.id in reacted_users:
                             print("GO FUCK YOU222323RSELF SHIT")
@@ -554,6 +554,12 @@ class Giveaways(commands.Cog):
             giveaway_data = func[1]["participants"]
 
             await inter.response.send_message(f"Всего участников: **{len(giveaway_data)}**", ephemeral=True)
+        elif inter.component.custom_id == "get_my_chance":
+            func = giveaways.get_giveaway_by_msg_id(inter.message.id)
+            giveaway_data = func[1]["participants"]
+            leng = len(giveaway_data)
+            if str(inter.user.id) in giveaway_data:
+                await inter.response.send_message(f"Ваш шанс: **123**", ephemeral=True)
 
 
 def setup(bot: commands.Bot):

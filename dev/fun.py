@@ -204,28 +204,28 @@ class Fun(commands.Cog):
     async def random_skin(inter: disnake.ApplicationCommandInteraction):
         await inter.response.defer(with_message=True, ephemeral=True)
         async with aiohttp.ClientSession() as session:
-        async with session.get('https://namemc.com/minecraft-skins/random') as response:
-            if response.status_code == 200:
-                soup = BeautifulSoup(response.text, 'html.parser')
-    
-                skin_img = soup.find("img", {"class": "drop-shadow auto-size-square"}).get("data-src")
-                skin_link = soup.find("div", {"class": "card mb-2"}).find("a").get("href")
-                skin_link = f"https://namemc.com{skin_link}"
-    
-                embed = disnake.Embed(
-                    title="Рандомный Minecraft скин",
-                    description="**<:mc_accept:1196835818346647572>  Вот ваш рандомный скин:**\n_Для перехода на страницу скина нажмите на первую кнопку ниже_",
-                    colour=disnake.Color.from_rgb(219, 110, 26),
-                )
-    
-                embed.set_footer(text="Все скины получены через NameMC (Вторая кнопка снизу)")
-                embed.set_image(url=skin_img)
-    
-                resp = await inter.original_response()
-                await resp.edit(embeds=[embed], components=[disnake.ui.Button(label="Ссылка на скин", style=disnake.ButtonStyle.url, url=skin_link), disnake.ui.Button(label="Страница скинов от NameMC", style=disnake.ButtonStyle.url, url="https://namemc.com/minecraft-skins/random")])
-            else:
-                resp = await inter.original_response()
-                await resp.edit("Не получилось подключиться к серверу NameMC. Напишите администратору о данной проблеме")
+            async with session.get('https://namemc.com/minecraft-skins/random') as response:
+                if response.status_code == 200:
+                    soup = BeautifulSoup(response.text, 'html.parser')
+
+                    skin_img = soup.find("img", {"class": "drop-shadow auto-size-square"}).get("data-src")
+                    skin_link = soup.find("div", {"class": "card mb-2"}).find("a").get("href")
+                    skin_link = f"https://namemc.com{skin_link}"
+
+                    embed = disnake.Embed(
+                        title="Рандомный Minecraft скин",
+                        description="**<:mc_accept:1196835818346647572>  Вот ваш рандомный скин:**\n_Для перехода на страницу скина нажмите на первую кнопку ниже_",
+                        colour=disnake.Color.from_rgb(219, 110, 26),
+                    )
+
+                    embed.set_footer(text="Все скины получены через NameMC (Вторая кнопка снизу)")
+                    embed.set_image(url=skin_img)
+
+                    resp = await inter.original_response()
+                    await resp.edit(embeds=[embed], components=[disnake.ui.Button(label="Ссылка на скин", style=disnake.ButtonStyle.url, url=skin_link), disnake.ui.Button(label="Страница скинов от NameMC", style=disnake.ButtonStyle.url, url="https://namemc.com/minecraft-skins/random")])
+                else:
+                    resp = await inter.original_response()
+                    await resp.edit("Не получилось подключиться к серверу NameMC. Напишите администратору о данной проблеме")
 
             
 

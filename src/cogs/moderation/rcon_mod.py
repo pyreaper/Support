@@ -22,14 +22,15 @@ class RCGiver(commands.Cog):
         pass
 
     @minecraft.sub_command(name="rcon", description="Отправить RCON-команду")
-    async def rcon(inter: disnake.ApplicationCommandInteraction, command):
+    async def rcon(inter: disnake.ApplicationCommandInteraction, command: str, logneed: bool = True):
         try:
             with MCRcon(host=host, port=port, password=password, timeout=timeout) as mcr:
                 resp = mcr.command(command)
-            if resp != "":
-                await inter.response.send_message(f'**Ответ:** ```{resp}```', ephemeral=True)
-            else:
-                await inter.response.send_message(f'**Команда была отправлена, но пришёл пустой ответ.**', ephemeral=True)
+            if logneed:
+                if resp != "":
+                    await inter.response.send_message(f'**Ответ:** ```{resp}```', ephemeral=True)
+                else:
+                    await inter.response.send_message(f'**Команда была отправлена, но пришёл пустой ответ.**', ephemeral=True)
         except Exception as ex:
             print(ex)
             print(type(ex))
