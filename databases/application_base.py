@@ -22,7 +22,13 @@ class SomethingWentWrongException(Exception):
 
 
 class Database:
-    def __init__(self, guild: disnake.Guild, bot):
+    def __init__(self, bot):
+        """
+        Запуск бд с добавлением таблиц (если не существуют)
+
+        Attributes:
+            bot -- объект бота
+        """
         self.bot = bot
 
         # Устанавливаем соединение с базой данных
@@ -68,11 +74,10 @@ class Database:
     def new_application(name: str, give_role: int, channel_id: int,
                         description: str, emoji: str):
         """
-        id INTEGER PRIMARY KEY,
-            name TEXT NOT NULL,
-            give_role INTEGER,
-            description TEXT NOT NULL,
-            emoji TEXT NOT NULL
+        Запуск бд с добавлением таблиц (если не существуют)
+
+        Attributes:
+            bot -- объект бота
         """
         connection = sqlite3.connect('123.db')
         cursor = connection.cursor()

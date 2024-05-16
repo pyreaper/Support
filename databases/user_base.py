@@ -47,7 +47,7 @@ class SameHashException(TransferErrors):
 class SomethingWentWrongException(TransferErrors):
     """Exception raised for unknown errors
 
-    Attributes:
+    Parameters:
         transfer_hash -- hash of the invalid transaction
         message -- explanation of the error
         exception_data -- data of the exception
@@ -62,6 +62,11 @@ class SomethingWentWrongException(TransferErrors):
 
 class Database:
     def __init__(self, guild: disnake.Guild, bot):
+        """
+        Запуск бд с добавлением таблиц (если не существуют)
+
+        :param guild: Гилд
+        """
         self.bot = bot
 
         # Устанавливаем соединение с базой данных
@@ -171,6 +176,11 @@ class Database:
 
     @staticmethod
     def generate_unique_hash(data: str):
+        """
+        Генерация уникального набора символов путём хеширования
+
+        :parameter data: Айди сообщения
+        """
         number_str_encoded = data.encode('utf-8')
 
         # Create a hashlib object using SHA-256
@@ -187,6 +197,14 @@ class Database:
     # Shop items
     @staticmethod
     def new_shop_item(name, price, role_id, *commands):
+        """
+        Создание нового предмета в магазине
+
+        :parameter name: Имя предмета
+        :parameter price: Цена предмета
+        :parameter role_id: Айди выдаваемой роли
+        :parameter commands: Команды
+        """
         connection = sqlite3.connect('123.db')
         cursor = connection.cursor()
         commands_list = ""
@@ -204,6 +222,11 @@ class Database:
 
     @staticmethod
     def delete_shop_item(name):
+        """
+        Удаление предмета из магазина
+
+        :parameter name: Имя предмета
+        """
         connection = sqlite3.connect('123.db')
         cursor = connection.cursor()
 
@@ -217,6 +240,9 @@ class Database:
 
     @staticmethod
     def get_all_items():
+        """
+        :return: Возвращает все объекты из магазина
+        """
         connection = sqlite3.connect('123.db')
         cursor = connection.cursor()
 
@@ -236,6 +262,16 @@ class Database:
     # User
     @staticmethod
     def new_user(user_id, username, level, level_points, next_level_points):
+        """
+        Создание нового пользователя
+
+        :parameter user_id: Айди пользователя
+        :parameter username: Имя пользователя
+        :parameter level: Начальный уровень
+        :parameter level_points: Поинты уровня
+        :parameter next_level_points: Поинты до следующего уровня
+        """
+
         connection = sqlite3.connect('123.db')
         cursor = connection.cursor()
 
@@ -247,7 +283,13 @@ class Database:
         connection.close()
 
     @staticmethod
-    def get_user_ex(user_id, card_type: str = "debit"):
+    def get_user_ex(user_id):
+        """
+        Поиск пользователя по айди
+
+        :parameter user_id: Айди пользователя
+        :returns: Возвращает пользователя или ошибку
+        """
         connection = sqlite3.connect('123.db')
         cursor = connection.cursor()
 
@@ -257,13 +299,19 @@ class Database:
 
         if data is None:
             return SomethingWentWrongException(None,
-                                               exception_data=[user_id, card_type],
+                                               exception_data=[user_id],
                                                message="Can't find user with the arguments presented")
         return data
 
     # Cards
     @staticmethod
     def new_card(user_id, card_type: str = "debit"):
+        """
+        Открытие карты
+
+        :parameter user_id: Айди пользователя
+        :parameter card_type: Тип карты (временно не используется, всегда debit)
+        """
         connection = sqlite3.connect('123.db')
         cursor = connection.cursor()
 
@@ -285,6 +333,13 @@ class Database:
 
     @staticmethod
     def get_user_money(user_id, card_type: str = "debit"):
+        """
+        Получение данных о деньгах на карте
+
+        :parameter user_id: Айди пользователя
+        :parameter card_type: Тип карты (временно не используется, всегда debit)
+        :returns: Возвращает список (айди юзера и деньги) или ошибку
+        """
         connection = sqlite3.connect('123.db')
         cursor = connection.cursor()
         print(user_id, card_type)
@@ -300,6 +355,13 @@ class Database:
 
     @staticmethod
     def get_card_data(user_id, card_type: str = "debit"):
+        """
+        Получение данных о карте
+
+        :parameter user_id: Айди пользователя
+        :parameter card_type: Тип карты (временно не используется, всегда debit)
+        :returns: Возвращает карту или ошибку
+        """
         connection = sqlite3.connect('123.db')
         cursor = connection.cursor()
 
@@ -315,6 +377,14 @@ class Database:
 
     @staticmethod
     def get_transfer_access(user_id, card_type: str = "debit"):
+        """
+        Получение данных о включенных переводах на карте
+
+        :parameter user_id: Айди пользователя
+        :parameter card_type: Тип карты (временно не используется, всегда debit)
+        :returns: Возвращает список (айди юзера и данные по карте) или ошибку
+        """
+
         if card_type == "anonymous":
             return user_id, 1, "anonymous"
 
@@ -333,6 +403,13 @@ class Database:
 
     @staticmethod
     def set_transfer_access(user_id, value: int = 0, card_type: str = "debit"):
+        """
+        Установка возможности переводов на карту
+
+        :parameter user_id: Айди пользователя
+        :parameter value: Значение на установку (0 выключены, 1 включены)
+        :parameter card_type: Тип карты (временно не используется, всегда debit)
+        """
         if card_type == "anonymous":
             return
         connection = sqlite3.connect('123.db')
@@ -345,6 +422,13 @@ class Database:
 
     @staticmethod
     def set_money(user_id, money, card_type: str = "debit"):
+        """
+        Установка денег на карте
+
+        :parameter user_id: Айди пользователя
+        :parameter money: Значение на установку
+        :parameter card_type: Тип карты (временно не используется, всегда debit)
+        """
         connection = sqlite3.connect('123.db')
         cursor = connection.cursor()
 
@@ -354,6 +438,14 @@ class Database:
         connection.close()
 
     def decrease_money(self, user_id, much, card_type: str = "debit"):
+        """
+        Установка денег на карте
+
+        :parameter user_id: Айди пользователя
+        :parameter much: Значение на установку (-)
+        :parameter card_type: Тип карты (временно не используется, всегда debit)
+        :returns: Чаще всего None, может вернуть ошибку
+        """
         connection = sqlite3.connect('123.db')
         cursor = connection.cursor()
 
@@ -370,6 +462,14 @@ class Database:
         connection.close()
 
     def increase_money(self, user_id, much, card_type: str = "debit"):
+        """
+        Установка денег на карте
+
+        :parameter user_id: Айди пользователя
+        :parameter much: Значение на установку (+)
+        :parameter card_type: Тип карты (временно не используется, всегда debit)
+        :returns: Чаще всего None, может вернуть ошибку
+        """
         connection = sqlite3.connect('123.db')
         cursor = connection.cursor()
 
@@ -383,6 +483,20 @@ class Database:
     # Transfers
 
     def transfer_money(self, sender_card, receiver_card, sender_id, receiver_id, reason, bonus_amount, transfer_hash):
+        """
+        Перевод средств с карты на карту
+
+
+        :parameter sender_card: Карта отправляющего
+        :param receiver_card: Карта получающего
+        :param sender_id: Айди отправляющего
+        :param receiver_id: Айди получающего
+        :param reason: Причина перевода
+        :param bonus_amount: Количество средств на перевод
+        :param transfer_hash: Хеш транзакции
+
+        :returns: Данные о переводе и ответ на уменьшение денег (ошибку или None)
+        """
         connection = sqlite3.connect('123.db')
         cursor = connection.cursor()
 
@@ -442,6 +556,15 @@ class Database:
 
     @staticmethod
     def get_transfer_info(transfer_id: int = None, transfer_hash: str = None):
+        """
+        Информация о переводе
+        Можно указать 1 значение, другое оставив пустым. В приоритете хеш транзакции
+
+        :parameter transfer_id: Айди трансфера
+        :param transfer_hash: Хеш транзакции
+
+        :returns: Данные о переводе или ошибку
+        """
         if transfer_hash is not None:
             transfer_find_data = ["transfer_hash", transfer_hash]
         elif transfer_id is not None:
@@ -469,6 +592,14 @@ class Database:
 
     @staticmethod
     def get_user_level(user_id):
+        """
+        Получение уровня пользователя
+
+
+        :parameter user_id: Айди пользователя
+
+        :returns: Список (айди, уровень, поинты, поинты до следующего уровня) или ошибку
+        """
         connection = sqlite3.connect('123.db')
         cursor = connection.cursor()
         print(user_id)
@@ -486,6 +617,15 @@ class Database:
         return level
 
     def add_level_points(self, user_id, amount):
+        """
+        Добавить поинты уровня
+
+
+        :parameter user_id: Айди пользователя
+        :parameter amount: Количество на выдачу
+
+        :returns: Код 100 если поинты были добавлены или список с кодом 200 и данными о добавлении
+        """
         global response
         connection = sqlite3.connect('123.db')
         cursor = connection.cursor()
@@ -521,6 +661,13 @@ class Database:
 
     @staticmethod
     def set_user_level(user_id, amount):
+        """
+        Добавление уровня пользователю
+
+
+        :parameter user_id: Айди пользователя
+        :parameter amount: Количество на выдачу
+        """
         connection = sqlite3.connect('123.db')
         cursor = connection.cursor()
 
